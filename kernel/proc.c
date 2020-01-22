@@ -35,8 +35,8 @@ procinit(void)
       char *pa = kalloc();
       if(pa == 0)
         panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));
-      kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+      uint32 va = KSTACK((int) (p - proc));
+      kvmmap(va, (uint32)pa, PGSIZE, PTE_R | PTE_W);
       p->kstack = va;
   }
   kvminithart();
@@ -117,9 +117,8 @@ found:
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof p->context);
-  p->context.ra = (uint64)forkret;
+  p->context.ra = (uint32)forkret;
   p->context.sp = p->kstack + PGSIZE;
-
   return p;
 }
 
@@ -151,20 +150,19 @@ pagetable_t
 proc_pagetable(struct proc *p)
 {
   pagetable_t pagetable;
-
+  
   // An empty page table.
   pagetable = uvmcreate();
-
   // map the trampoline code (for system call return)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
   mappages(pagetable, TRAMPOLINE, PGSIZE,
-           (uint64)trampoline, PTE_R | PTE_X);
+           (uint32)trampoline, PTE_R | PTE_X);
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   mappages(pagetable, TRAPFRAME, PGSIZE,
-           (uint64)(p->tf), PTE_R | PTE_W);
+           (uint32)(p->tf), PTE_R | PTE_W);
 
   return pagetable;
 }
@@ -172,7 +170,7 @@ proc_pagetable(struct proc *p)
 // Free a process's page table, and free the
 // physical memory it refers to.
 void
-proc_freepagetable(pagetable_t pagetable, uint64 sz)
+proc_freepagetable(pagetable_t pagetable, uint32 sz)
 {
   uvmunmap(pagetable, TRAMPOLINE, PGSIZE, 0);
   uvmunmap(pagetable, TRAPFRAME, PGSIZE, 0);
@@ -214,7 +212,6 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
-
   release(&p->lock);
 }
 
@@ -380,7 +377,7 @@ exit(int status)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(uint64 addr)
+wait(uint32 addr)
 {
   struct proc *np;
   int havekids, pid;
@@ -454,11 +451,10 @@ scheduler(void)
       if(p->state == RUNNABLE) {
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
-        // before jumping back to us.
+        // before jumping back to us.        
         p->state = RUNNING;
         c->proc = p;
         swtch(&c->scheduler, &p->context);
-
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
@@ -515,7 +511,6 @@ forkret(void)
 
   // Still holding p->lock from scheduler.
   release(&myproc()->lock);
-
   if (first) {
     // File system initialization must be run in the context of a
     // regular process (e.g., because it calls sleep), and thus cannot
@@ -617,7 +612,7 @@ kill(int pid)
 // depending on usr_dst.
 // Returns 0 on success, -1 on error.
 int
-either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
+either_copyout(int user_dst, uint32 dst, void *src, uint32 len)
 {
   struct proc *p = myproc();
   if(user_dst){
@@ -632,7 +627,7 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 // depending on usr_src.
 // Returns 0 on success, -1 on error.
 int
-either_copyin(void *dst, int user_src, uint64 src, uint64 len)
+either_copyin(void *dst, int user_src, uint32 src, uint32 len)
 {
   struct proc *p = myproc();
   if(user_src){

@@ -96,14 +96,13 @@ virtio_disk_init(void)
     panic("virtio disk max queue too short");
   *R(VIRTIO_MMIO_QUEUE_NUM) = NUM;
   memset(disk.pages, 0, sizeof(disk.pages));
-  *R(VIRTIO_MMIO_QUEUE_PFN) = ((uint64)disk.pages) >> PGSHIFT;
+  *R(VIRTIO_MMIO_QUEUE_PFN) = ((uint32)disk.pages) >> PGSHIFT;
 
   // desc = pages -- num * VRingDesc
   // avail = pages + 0x40 -- 2 * uint16, then num * uint16
   // used = pages + 4096 -- 2 * uint16, then num * vRingUsedElem
-
   disk.desc = (struct VRingDesc *) disk.pages;
-  disk.avail = (uint16*)(((char*)disk.desc) + NUM*sizeof(struct VRingDesc));
+  disk.avail = (uint16 *)(((char* )disk.desc) + NUM * sizeof(struct VRingDesc));
   disk.used = (struct UsedArea *) (disk.pages + PGSIZE);
 
   for(int i = 0; i < NUM; i++)
@@ -184,7 +183,7 @@ virtio_disk_rw(struct buf *b, int write)
     }
     sleep(&disk.free[0], &disk.vdisk_lock);
   }
-  
+
   // format the three descriptors.
   // qemu's virtio-blk.c reads them.
 
@@ -203,12 +202,12 @@ virtio_disk_rw(struct buf *b, int write)
 
   // buf0 is on a kernel stack, which is not direct mapped,
   // thus the call to kvmpa().
-  disk.desc[idx[0]].addr = (uint64) kvmpa((uint64) &buf0);
+  disk.desc[idx[0]].addr = (uint64) (uint32) kvmpa((uint32) &buf0);
   disk.desc[idx[0]].len = sizeof(buf0);
   disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;
   disk.desc[idx[0]].next = idx[1];
 
-  disk.desc[idx[1]].addr = (uint64) b->data;
+  disk.desc[idx[1]].addr = (uint64) (uint32) b->data;
   disk.desc[idx[1]].len = BSIZE;
   if(write)
     disk.desc[idx[1]].flags = 0; // device reads b->data
@@ -218,7 +217,7 @@ virtio_disk_rw(struct buf *b, int write)
   disk.desc[idx[1]].next = idx[2];
 
   disk.info[idx[0]].status = 0;
-  disk.desc[idx[2]].addr = (uint64) &disk.info[idx[0]].status;
+  disk.desc[idx[2]].addr = (uint64) (uint32) &disk.info[idx[0]].status;
   disk.desc[idx[2]].len = 1;
   disk.desc[idx[2]].flags = VRING_DESC_F_WRITE; // device writes the status
   disk.desc[idx[2]].next = 0;

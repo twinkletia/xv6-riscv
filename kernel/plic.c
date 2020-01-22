@@ -22,7 +22,7 @@ plicinithart(void)
   int hart = cpuid();
   
   // set uart's enable bit for this hart's S-mode. 
-  *(uint32*)PLIC_SENABLE(hart)= (1 << UART0_IRQ) | (1 << VIRTIO0_IRQ);
+  *(uint32*)PLIC_SENABLE(hart) = (1 << UART0_IRQ) | (1 << VIRTIO0_IRQ);
 
   // set this hart's S-mode priority threshold to 0.
   *(uint32*)PLIC_SPRIORITY(hart) = 0;
@@ -30,14 +30,15 @@ plicinithart(void)
 
 // return a bitmap of which IRQs are waiting
 // to be served.
-uint64
+// xv6 uses grobal interrupt 1-31, so uint32 is enough.
+uint32
 plic_pending(void)
 {
-  uint64 mask;
+  uint32 mask;
 
   //mask = *(uint32*)(PLIC + 0x1000);
-  //mask |= (uint64)*(uint32*)(PLIC + 0x1004) << 32;
-  mask = *(uint64*)PLIC_PENDING;
+  //mask |= (uint32)*(uint32*)(PLIC + 0x1004) << 32;
+  mask = *(uint32*)PLIC_PENDING;
 
   return mask;
 }
