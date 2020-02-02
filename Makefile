@@ -117,10 +117,10 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h
 # http://www.gnu.org/software/make/manual/html_node/Chained-Rules.html
 .PRECIOUS: %.o
 
+# TODO: add all tests
 UPROGS=\
 	$U/_cat\
 	$U/_echo\
-	$U/_forktest\
 	$U/_grep\
 	$U/_init\
 	$U/_kill\
@@ -130,7 +130,6 @@ UPROGS=\
 	$U/_rm\
 	$U/_sh\
 	$U/_stressfs\
-	$U/_usertests\
 	$U/_wc\
 	$U/_zombie\
 
@@ -159,7 +158,7 @@ CPUS := 3
 endif
 
 QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 3G -smp $(CPUS) -nographic
+QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 640K -smp $(CPUS) -nographic
 QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
 
 qemu: $K/kernel fs.img
