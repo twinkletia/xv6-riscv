@@ -21,11 +21,11 @@
 // http://byterunner.com/16550.html
 #define RHR 0 // receive holding register (for input bytes)
 #define THR 0 // transmit holding register (for output bytes)
-#define IER 1 // interrupt enable register
-#define FCR 2 // FIFO control register
-#define ISR 2 // interrupt status register
-#define LCR 3 // line control register
-#define LSR 5 // line status register
+#define IER 4 // interrupt enable register
+#define FCR 8 // FIFO control register
+#define ISR 8 // interrupt status register
+#define LCR 12 // line control register
+#define LSR 20 // line status register
 
 #define ReadReg(reg) (*(Reg(reg)))
 #define WriteReg(reg, v) (*(Reg(reg)) = (v))
