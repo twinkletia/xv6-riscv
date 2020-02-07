@@ -169,7 +169,7 @@ qemu: $K/kernel fs.img
 
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
-	$(QEMU) $(QEMUOPTS) events=trace-events,file=trace.log -S $(QEMUGDB)
+	$(QEMU) $(QEMUOPTS) -trace events=trace-events,file=trace.log -S $(QEMUGDB)
 
 # CUT HERE
 # prepare dist for students
