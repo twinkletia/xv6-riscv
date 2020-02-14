@@ -39,11 +39,10 @@ uartinit(void)
   // special mode to set baud rate.
   WriteReg(LCR, 0x80);
 
-  // LSB for baud rate of 38.4K.
-  WriteReg(0, 0x03);
-
-  // MSB for baud rate of 38.4K.
-  WriteReg(1, 0x00);
+  // LSB for baud rate
+  //WriteReg(0, 0xf9);
+  // MSB for baud rate  
+  //WriteReg(4, 0x15);
 
   // leave set-baud mode,
   // and set word length to 8 bits, no parity.
@@ -58,8 +57,7 @@ uartinit(void)
 
 // write one output character to the UART.
 void
-uartputc(int c)
-{
+uartputc(int c){
   // wait for Transmit Holding Empty to be set in LSR.
   while((ReadReg(LSR) & (1 << 5)) == 0)
     ;
