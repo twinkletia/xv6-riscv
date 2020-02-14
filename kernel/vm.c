@@ -15,6 +15,40 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
+
+void dump_pagetable(pagetable_t pagetable, int level, int vpn1){
+  uint32 memo_key = 0;
+  uint32 memo_value = 0;
+  uint32 memo_size = 0;
+  uint32 memo_flags = 0;
+
+  for(int i=0; i < 1024; i++){
+    if(pagetable[i] == 0) continue;    
+    if (level == 1){
+        dump_pagetable((pagetable_t) ((pagetable[i] >> 10) << 12), 0, i);
+    } else {
+      uint32 vaddr_base = (vpn1 << (12+10)) + (i << 12);
+      uint32 paddr_base = (pagetable[i] >> 10) << 12;
+      uint32 flags = pagetable[i] & 0x3ff;
+      if (vaddr_base == memo_key + memo_size * PGSIZE && memo_flags == flags){        
+        memo_size += 1;
+      } else {
+        if (memo_key != 0){
+          printf("%p:\t%p\t%x\t%x\n", memo_key, memo_value, memo_size * PGSIZE, memo_flags);
+        }
+        
+        memo_key = vaddr_base;
+        memo_value = paddr_base;
+        memo_flags = flags;
+        memo_size = 1;
+      }
+    }
+  }
+  if (memo_key != 0){
+    printf("%p:\t%p\t%x\t%x\n", memo_key, memo_value, memo_size * PGSIZE, memo_flags);
+  }
+}
+
 /*
  * create a direct-map page table for the kernel and
  * turn on paging. called early, in supervisor mode.
@@ -47,6 +81,8 @@ kvminit()
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
   kvmmap(TRAMPOLINE, (uint32)trampoline, PGSIZE, PTE_R | PTE_X);
+
+  dump_pagetable(kernel_pagetable, 1, 0);
 }
 
 // Switch h/w page table register to the kernel's page table,
