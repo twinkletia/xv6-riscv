@@ -25,7 +25,8 @@ void dump_pagetable(pagetable_t pagetable, int level, int vpn1){
   for(int i=0; i < 1024; i++){
     if(pagetable[i] == 0) continue;    
     if (level == 1){
-        dump_pagetable((pagetable_t) ((pagetable[i] >> 10) << 12), 0, i);
+      printf("[%p]\n", pagetable[i]);
+      dump_pagetable((pagetable_t) ((pagetable[i] >> 10) << 12), 0, i);
     } else {
       uint32 vaddr_base = (vpn1 << (12+10)) + (i << 12);
       uint32 paddr_base = (pagetable[i] >> 10) << 12;
