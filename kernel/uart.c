@@ -30,9 +30,48 @@
 #define ReadReg(reg) (*(Reg(reg)))
 #define WriteReg(reg, v) (*(Reg(reg)) = (v))
 
+#define UART_TX_BUF ((volatile unsigned int *) 0x40000000)
+#define UART_TX_STAT ((volatile unsigned int *) 0x40000004)
+
+#define UART_RX_BUF ((volatile unsigned int *) 0x40000010)
+#define UART_RX_STAT ((volatile unsigned int *) 0x40000014)
+
+#define UART_TX_GET_STAT_FULL() (((*(UART_TX_STAT)) & 0x00000008) >> 3)
+#define UART_TX_GET_STAT_EMPTY() (((*(UART_TX_STAT)) & 0x00000004) >> 2)
+#define UART_TX_GET_STAT_BUSY() (((*(UART_TX_STAT)) & 0x00000002) >> 1)
+#define UART_TX_GET_STAT_EN() (((*(UART_TX_STAT)) & 0x00000001))
+#define UART_TX_SET_EN(en) (*(UART_TX_STAT) = *(UART_TX_STAT) | ((en) & 0x1));
+
+#define UART_RX_GET_STAT_FULL() (((*(UART_RX_STAT)) & 0x00000008) >> 3)
+#define UART_RX_GET_STAT_EMPTY() (((*(UART_RX_STAT)) & 0x00000004) >> 2)
+#define UART_RX_GET_STAT_BUSY() (((*(UART_RX_STAT)) & 0x00000002) >> 1)
+#define UART_RX_GET_STAT_EN() (((*(UART_RX_STAT)) & 0x00000001))
+#define UART_RX_SET_EN(en) (*(UART_RX_STAT) = *(UART_RX_STAT) | ((en) & 0x1));
+
+typedef union {
+	struct {
+		unsigned int en : 1;	
+		unsigned int busy : 1;	
+		unsigned int empty : 1;
+		unsigned int full : 1;
+		unsigned int unused: 28;
+	} stat;
+	unsigned int val;
+} uart_tx_stat_t;
+
+typedef uart_tx_stat_t uart_rx_stat_t;
+
+int uart_putchar(int ch);
+int uart_getchar(void);
+
+extern __attribute__((weak)) void uart_rx_interrupt_handler(void);
+extern __attribute__((weak)) void uart_tx_interrupt_handler(void);
+
+
 void
 uartinit(void)
 {
+	/*
   // disable interrupts.
   WriteReg(IER, 0x00);
 
@@ -53,15 +92,24 @@ uartinit(void)
 
   // enable receive interrupts.
   WriteReg(IER, 0x01);
+  */
 }
 
 // write one output character to the UART.
 void
 uartputc(int c){
   // wait for Transmit Holding Empty to be set in LSR.
+  /*
   while((ReadReg(LSR) & (1 << 5)) == 0)
     ;
   WriteReg(THR, c);
+  */
+	while(UART_TX_GET_STAT_FULL())
+		asm volatile("nop");
+
+	*UART_TX_BUF = c;
+	UART_TX_SET_EN(1);
+
 }
 
 // read one input character from the UART.
@@ -69,12 +117,17 @@ uartputc(int c){
 int
 uartgetc(void)
 {
-  if(ReadReg(LSR) & 0x01){
-    // input data is ready.
-    return ReadReg(RHR);
-  } else {
-    return -1;
-  }
+	int ch = -1;
+
+	UART_RX_SET_EN(1);
+
+	/* Blocking */
+	while(UART_RX_GET_STAT_EMPTY()) {
+		asm volatile("nop");
+	}
+	ch = *UART_RX_BUF;
+	return ch;
+
 }
 
 // trap.c calls here when the uart interrupts.

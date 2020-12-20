@@ -62,28 +62,29 @@ kvminit()
   memset(kernel_pagetable, 0, PGSIZE);
 
   // uart registers
-  kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);
+  kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W | PTE_A | PTE_D);
 
   // virtio mmio disk interface
-  kvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+  //kvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W | PTE_A | PTE_D);
+  kvmmap(MMCBLK, MMCBLK, PGSIZE*2, PTE_R | PTE_W | PTE_A | PTE_D);
 
   // CLINT
-  kvmmap(CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+  kvmmap(CLINT, CLINT, 0x10000, PTE_R | PTE_W | PTE_A | PTE_D);
 
   // PLIC
-  kvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+  kvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W | PTE_A | PTE_D);
 
   // map kernel text executable and read-only.
-  kvmmap(KERNBASE, KERNBASE, (uint32)etext-KERNBASE, PTE_R | PTE_X);
+  kvmmap(KERNBASE, KERNBASE, (uint32)etext-KERNBASE, PTE_R | PTE_X | PTE_A);
 
   // map kernel data and the physical RAM we'll make use of.
-  kvmmap((uint32)etext, (uint32)etext, PHYSTOP-(uint32)etext, PTE_R | PTE_W);
+  kvmmap((uint32)etext, (uint32)etext, PHYSTOP-(uint32)etext, PTE_R | PTE_W | PTE_A | PTE_D);
 
   // map the trampoline for trap entry/exit to
   // the highest virtual address in the kernel.
-  kvmmap(TRAMPOLINE, (uint32)trampoline, PGSIZE, PTE_R | PTE_X);
+  kvmmap(TRAMPOLINE, (uint32)trampoline, PGSIZE, PTE_R | PTE_X | PTE_A);
 
-  dump_pagetable(kernel_pagetable, 1, 0);
+  //dump_pagetable(kernel_pagetable, 1, 0);
 }
 
 // Switch h/w page table register to the kernel's page table,
@@ -262,7 +263,7 @@ uvminit(pagetable_t pagetable, uchar *src, uint sz)
     panic("inituvm: more than a page");
   mem = kalloc();
   memset(mem, 0, PGSIZE);
-  mappages(pagetable, 0, PGSIZE, (uint32)mem, PTE_W|PTE_R|PTE_X|PTE_U);
+  mappages(pagetable, 0, PGSIZE, (uint32)mem, PTE_W|PTE_R|PTE_X|PTE_U|PTE_A|PTE_D);
   memmove(mem, src, sz);
 }
 

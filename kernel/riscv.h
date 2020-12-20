@@ -328,10 +328,12 @@ sfence_vma()
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
 
 #define PTE_V (1 << 0) // valid
-#define PTE_R (1 << 1)
-#define PTE_W (1 << 2)
-#define PTE_X (1 << 3)
+#define PTE_R ((1 << 1) | PTE_A | PTE_D)
+#define PTE_W ((1 << 2) | PTE_A | PTE_D)
+#define PTE_X ((1 << 3) | PTE_A | PTE_D)
 #define PTE_U (1 << 4) // 1 -> user can access
+#define PTE_A (1 << 6)
+#define PTE_D (1 << 7)
 
 // shift a physical address to the right place for a PTE.
 #define PA2PTE(pa) ((((uint32)pa) >> 12) << 10)

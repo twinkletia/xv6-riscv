@@ -28,25 +28,12 @@ OBJS = \
   $K/sysfile.o \
   $K/kernelvec.o \
   $K/plic.o \
-  $K/virtio_disk.o
+  $K/virtio_disk.o \
+  $K/mmcblk.o
 
 # riscv32-unknown-elf- or riscv32-linux-gnu-
 # perhaps in /opt/riscv/bin
 TOOLPREFIX = riscv32-unknown-elf-
-
-# Try to infer the correct TOOLPREFIX if not set
-ifndef TOOLPREFIX
-TOOLPREFIX := $(shell if riscv32-unknown-elf-objdump -i 2>&1 | grep 'elf32-big' >/dev/null 2>&1; \
-	then echo 'riscv32-unknown-elf-'; \
-	elif riscv32-linux-gnu-objdump -i 2>&1 | grep 'elf32-big' >/dev/null 2>&1; \
-	then echo 'riscv32-linux-gnu-'; \
-	else echo "***" 1>&2; \
-	echo "*** Error: Couldn't find an riscv32 version of GCC/binutils." 1>&2; \
-	echo "*** To turn off this error, run 'gmake TOOLPREFIX= ...'." 1>&2; \
-	echo "***" 1>&2; exit 1; fi)
-endif
-
-QEMU = qemu-system-riscv32
 
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
@@ -54,11 +41,8 @@ LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 
-CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer
-ifdef DEBUG
-	CFLAGS += -ggdb
-endif
-CFLAGS += -mabi=ilp32 -march=rv32ima
+CFLAGS = -Wall -Werror -fno-omit-frame-pointer -O2
+CFLAGS += -mabi=ilp32 -march=rv32ima -O
 CFLAGS += -MD
 CFLAGS += -mcmodel=medany
 CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
@@ -145,31 +129,15 @@ clean:
 	mkfs/mkfs .gdbinit \
         $U/usys.S \
 	$(UPROGS)
+	rm -rf block_device.img rv32x_simulation bootrom.hex
 
-# try to generate a unique GDB port
-GDBPORT = $(shell expr `id -u` % 5000 + 25000)
-# QEMU's gdb stub command line changed in 0.11
-QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
-	then echo "-gdb tcp::$(GDBPORT)"; \
-	else echo "-s -p $(GDBPORT)"; fi)
-
-ifndef CPUS
-CPUS := 3
-endif
-
-QEMUEXTRA = -drive file=fs1.img,if=none,format=raw,id=x1 -device virtio-blk-device,drive=x1,bus=virtio-mmio-bus.1
-QEMUOPTS = -machine virt -bios none -kernel $K/kernel -m 640K -smp $(CPUS) -nographic
-QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
-
-qemu: $K/kernel fs.img
-	$(QEMU) $(QEMUOPTS)
-
-.gdbinit: .gdbinit.tmpl-riscv
-	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
-
-qemu-gdb: $K/kernel .gdbinit fs.img
-	@echo "*** Now run 'gdb' in another window." 1>&2
-	$(QEMU) $(QEMUOPTS) -trace events=trace-events,file=trace.log -S $(QEMUGDB)
+block_device.img: fs.img
+	cp $< $@
+run: $K/kernel block_device.img
+	make -C ../../simulation
+	cp ../../simulation/bootrom.hex ./
+	cp ../../simulation/rv32x_simulation ./
+	clear && ./rv32x_simulation kernel/kernel --no-sim-exit --no-log 2>/dev/null
 
 # CUT HERE
 # prepare dist for students

@@ -18,12 +18,15 @@
 // PHYSTOP -- end RAM used by the kernel
 
 // qemu puts UART registers here in physical memory.
-#define UART0 0x10000000
+#define UART0 0x40000000
 #define UART0_IRQ 10
 
 // virtio mmio interface
 #define VIRTIO0 0x10001000
 #define VIRTIO0_IRQ 1
+
+// mmcblk
+#define MMCBLK	0x40001000
 
 // local interrupt controller, which contains the timer.
 #define CLINT 0x2000000
