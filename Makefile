@@ -137,7 +137,9 @@ run: $K/kernel block_device.img
 	make -C ../../simulation
 	cp ../../simulation/bootrom.hex ./
 	cp ../../simulation/rv32x_simulation ./
-	clear && ./rv32x_simulation kernel/kernel --no-sim-exit --no-log 2>/dev/null
+	cp ../../simulation/gtk.sh ./
+	cp ../../simulation/rv32x.gtkw ./
+#	clear && ./rv32x_simulation kernel/kernel --no-sim-exit --no-log 2>/dev/null
 
 # CUT HERE
 # prepare dist for students
