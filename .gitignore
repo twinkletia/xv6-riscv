@@ -15,3 +15,10 @@ mkfs
 kernel/kernel
 user/usys.S
 .gdbinit
+
+*.vcd
+*.hex
+*.sh
+*.log
+*.gtkw
+rv32x_simulation
