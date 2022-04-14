@@ -93,6 +93,7 @@ uartinit(void)
   // enable receive interrupts.
   WriteReg(IER, 0x01);
   */
+	UART_RX_SET_EN(1);
 }
 
 // write one output character to the UART.
@@ -119,12 +120,13 @@ uartgetc(void)
 {
 	int ch = -1;
 
-	UART_RX_SET_EN(1);
+	//UART_RX_SET_EN(1);
 
 	/* Blocking */
+  /*
 	while(UART_RX_GET_STAT_EMPTY()) {
 		asm volatile("nop");
-	}
+	}*/
 	ch = *UART_RX_BUF;
 	return ch;
 
