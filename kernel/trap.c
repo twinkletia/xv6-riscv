@@ -184,7 +184,7 @@ devintr()
     int irq = plic_claim();
 
     if(irq == UART0_IRQ){
-	  panic("UART0_IRQ");
+	  //panic("UART0_IRQ");
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
 	  panic("VIRTIO0_IRQ");
