@@ -22,3 +22,4 @@ user/usys.S
 *.log
 *.gtkw
 rv32x_simulation
+*.s
