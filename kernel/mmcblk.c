@@ -10,6 +10,7 @@
 #include "mmcblk.h"
 
 struct spinlock mmcblk_lock;
+char* sdspi_chan;
 
 void mmcblk_init(void) {
 	initlock(&mmcblk_lock, "mmcblk");
@@ -24,14 +25,12 @@ void mmcblk_read(struct buf *b) {
 	acquire(&mmcblk_lock);
 	//printf("mmcblk_read: b->blockno:%d, sector:%d\n", b->blockno, sector);
 
-	*SD_ADRS = sector;
+	*SD_ADRS = sector;	//ブロック[n]
 	*SD_OP = 0x00000001;
 
 	__sync_synchronize();
 
-	while((*SD_OP != 0x0) || (*SD_STATUS != 0x3)) {
-		asm volatile("nop");
-	}
+	sleep(&sdspi_chan, &mmcblk_lock);
 
 	for(int i = 0; i < BSIZE/2; i+=4) {
 		union {
@@ -41,10 +40,10 @@ void mmcblk_read(struct buf *b) {
 
 		data.v = SD_DATA_BASE[127-(i>>2)];
 
-		b->data[i+0] = data.x[2];
-		b->data[i+1] = data.x[3];
-		b->data[i+2] = data.x[0];
-		b->data[i+3] = data.x[1];
+		b->data[i+0] = data.x[0];
+		b->data[i+1] = data.x[1];
+		b->data[i+2] = data.x[2];
+		b->data[i+3] = data.x[3];
 	}
 
 	*SD_ADRS = sector+1;
@@ -52,9 +51,7 @@ void mmcblk_read(struct buf *b) {
 
 	__sync_synchronize();
 
-	while((*SD_OP != 0x0) || (*SD_STATUS != 0x3)) {
-		asm volatile("nop");
-	}
+	sleep(&sdspi_chan, &mmcblk_lock);
 
 	for(int i = 512; i < BSIZE; i+=4) {
 		union {
@@ -64,13 +61,12 @@ void mmcblk_read(struct buf *b) {
 
 		data.v = SD_DATA_BASE[127-((i-512)>>2)];
 
-		b->data[i+0] = data.x[2];
-		b->data[i+1] = data.x[3];
-		b->data[i+2] = data.x[0];
-		b->data[i+3] = data.x[1];
+		b->data[i+0] = data.x[0];
+		b->data[i+1] = data.x[1];
+		b->data[i+2] = data.x[2];
+		b->data[i+3] = data.x[3];
 	}
 
-	b->disk = 0;
 
 	/*
 	for(int i = 0; i < BSIZE; i++) {
@@ -87,8 +83,54 @@ void mmcblk_write(struct buf *b) {
 	acquire(&mmcblk_lock);
 	//printf("mmcblk_write: b->blockno:%d, sector:%d\n", b->blockno, sector);
 	//panic("mmcblk_write");
+/*
+	uint32 sector = b->blockno * (BSIZE / 512);
+	
+	for(int i = 0; i < BSIZE/2; i+=4) {
+		union {
+			unsigned int v;
+			unsigned char x[4];
+		} data;
+
+		data.x[2] = b->data[i+0];
+		data.x[3] = b->data[i+1];
+		data.x[0] = b->data[i+2];
+		data.x[1] = b->data[i+3];
+
+		SD_DATA_BASE[127-(i>>2)] = data.v;
+	}
+
+	*SD_ADRS = sector;
+	*SD_OP = 0x00000010;
+
+	__sync_synchronize();
+
+	sleep(&sdspi_chan, &mmcblk_lock);
+
+	for(int i = 512; i < BSIZE; i+=4) {
+		union {
+			unsigned int v;
+			unsigned char x[4];
+		} data;
+
+		data.x[2] = b->data[i+0];
+		data.x[3] = b->data[i+1];
+		data.x[0] = b->data[i+2];
+		data.x[1] = b->data[i+3];
+
+		SD_DATA_BASE[127-((i-512)>>2)] = data.v;
+	}
+
+	*SD_ADRS = sector+1;
+	*SD_OP = 0x00000010;
+
+	sleep(&sdspi_chan, &mmcblk_lock);
+*/
 	release(&mmcblk_lock);
 }
 void mmcblk_intr(void) {
-	panic("mmcblk_intr");
+	acquire(&mmcblk_lock);
+	//panic("mmcblk_intr");
+	wakeup(&sdspi_chan);
+	release(&mmcblk_lock);
 }

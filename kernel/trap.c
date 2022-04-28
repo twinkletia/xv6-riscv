@@ -187,8 +187,9 @@ devintr()
 	  //panic("UART0_IRQ");
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
-	  panic("VIRTIO0_IRQ");
-      virtio_disk_intr();
+	  //panic("VIRTIO0_IRQ");
+      //virtio_disk_intr();
+      mmcblk_intr();
     }
 
     plic_complete(irq);
