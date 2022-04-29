@@ -78,13 +78,10 @@ void mmcblk_read(struct buf *b) {
 }
 
 void mmcblk_write(struct buf *b) {
-	//uint32 sector = b->blockno * (BSIZE / 512);
+	uint32 sector = b->blockno * (BSIZE / 512);
 
 	acquire(&mmcblk_lock);
 	//printf("mmcblk_write: b->blockno:%d, sector:%d\n", b->blockno, sector);
-	//panic("mmcblk_write");
-/*
-	uint32 sector = b->blockno * (BSIZE / 512);
 	
 	for(int i = 0; i < BSIZE/2; i+=4) {
 		union {
@@ -92,20 +89,20 @@ void mmcblk_write(struct buf *b) {
 			unsigned char x[4];
 		} data;
 
-		data.x[2] = b->data[i+0];
-		data.x[3] = b->data[i+1];
-		data.x[0] = b->data[i+2];
-		data.x[1] = b->data[i+3];
+		data.x[0] = b->data[i+0];
+		data.x[1] = b->data[i+1];
+		data.x[2] = b->data[i+2];
+		data.x[3] = b->data[i+3];
 
 		SD_DATA_BASE[127-(i>>2)] = data.v;
+
 	}
 
-	*SD_ADRS = sector;
-	*SD_OP = 0x00000010;
-
-	__sync_synchronize();
+	*SD_ADRS = sector;	//ブロック[n]
+	*SD_OP = 0x00000002;
 
 	sleep(&sdspi_chan, &mmcblk_lock);
+	//panic("mmcblk_write");
 
 	for(int i = 512; i < BSIZE; i+=4) {
 		union {
@@ -113,19 +110,21 @@ void mmcblk_write(struct buf *b) {
 			unsigned char x[4];
 		} data;
 
-		data.x[2] = b->data[i+0];
-		data.x[3] = b->data[i+1];
-		data.x[0] = b->data[i+2];
-		data.x[1] = b->data[i+3];
+		data.x[0] = b->data[i+0];
+		data.x[1] = b->data[i+1];
+		data.x[2] = b->data[i+2];
+		data.x[3] = b->data[i+3];
 
 		SD_DATA_BASE[127-((i-512)>>2)] = data.v;
+
 	}
 
-	*SD_ADRS = sector+1;
-	*SD_OP = 0x00000010;
+	*SD_ADRS = sector+1;	//ブロック[n]
+	*SD_OP = 0x00000002;
 
 	sleep(&sdspi_chan, &mmcblk_lock);
-*/
+	__sync_synchronize();
+
 	release(&mmcblk_lock);
 }
 void mmcblk_intr(void) {
