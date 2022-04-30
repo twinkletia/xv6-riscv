@@ -84,17 +84,8 @@ void mmcblk_write(struct buf *b) {
 	//printf("mmcblk_write: b->blockno:%d, sector:%d\n", b->blockno, sector);
 	
 	for(int i = 0; i < BSIZE/2; i+=4) {
-		union {
-			unsigned int v;
-			unsigned char x[4];
-		} data;
-
-		data.x[0] = b->data[i+0];
-		data.x[1] = b->data[i+1];
-		data.x[2] = b->data[i+2];
-		data.x[3] = b->data[i+3];
-
-		SD_DATA_BASE[127-(i>>2)] = data.v;
+		
+		SD_DATA_BASE[127-(i>>2)] = ((uint32*)(b->data))[i];
 
 	}
 
@@ -105,17 +96,8 @@ void mmcblk_write(struct buf *b) {
 	//panic("mmcblk_write");
 
 	for(int i = 512; i < BSIZE; i+=4) {
-		union {
-			unsigned int v;
-			unsigned char x[4];
-		} data;
 
-		data.x[0] = b->data[i+0];
-		data.x[1] = b->data[i+1];
-		data.x[2] = b->data[i+2];
-		data.x[3] = b->data[i+3];
-
-		SD_DATA_BASE[127-((i-512)>>2)] = data.v;
+		SD_DATA_BASE[127-((i-512)>>2)] = ((uint32*)(b->data))[i];
 
 	}
 
