@@ -117,7 +117,8 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 
-fs.img: mkfs/mkfs README $(UPROGS)
+fs.img: mkfs/mkfs README $(UPROGS) $K/kernel
+	$(OBJCOPY) -O binary kernel/kernel kernel/kernel.bin
 	mkfs/mkfs fs.img README $(UPROGS)
 
 -include kernel/*.d user/*.d
@@ -134,8 +135,9 @@ clean:
 block_device.img: fs.img
 	cp $< $@
 run: $K/kernel block_device.img
-	make -C ../../simulation
-	cp ../../simulation/bootrom.hex ./
+	make -C ../../simulation SIMOPT=-DNO_TARGET\ -DKERNEL_START_ADDR=0x80000000
+	make -C ../../simulation/bootrom -B LOADEROPT=-DBINSIZE=$(shell ls $(K)/kernel.bin -l | awk -F\  '{print $$5}')\ -DBINSTART=256\ -DHEAD=0x80000000
+	cp ../../simulation/bootrom/bootrom.hex ./
 	cp ../../simulation/rv32x_simulation ./
 	cp ../../simulation/gtk.sh ./
 	cp ../../simulation/rv32x.gtkw ./

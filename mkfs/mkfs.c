@@ -40,6 +40,7 @@ void rinode(uint inum, struct dinode *ip);
 void rsect(uint sec, void *buf);
 uint ialloc(ushort type);
 void iappend(uint inum, void *p, int n);
+void kalloc(void);
 
 // convert to intel byte order
 ushort
@@ -171,6 +172,7 @@ main(int argc, char *argv[])
   winode(rootino, &din);
 
   balloc(freeblock);
+  kalloc();
 
   exit(0);
 }
@@ -302,4 +304,22 @@ iappend(uint inum, void *xp, int n)
   }
   din.size = xint(off);
   winode(inum, &din);
+}
+
+void kalloc(void){
+  char buf[BSIZE];
+  uint32 readSize = BSIZE;
+  uint32 total = 0;
+  uint32 p = FSSIZE;
+  FILE* fp;
+  if((fp = fopen("kernel/kernel.bin","rb")) == NULL){
+    perror("kernel.bin");
+    exit(1);
+  }
+  while(readSize == BSIZE){
+    memset(buf,0,BSIZE);
+    readSize = fread(buf,sizeof(char),BSIZE,fp);
+    printf("%d\n",total += readSize);
+    wsect(p++,buf);
+  }
 }
