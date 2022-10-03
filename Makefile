@@ -135,7 +135,7 @@ clean:
 block_device.img: fs.img
 	cp $< $@
 run: $K/kernel block_device.img
-	make -C ../../simulation SIMOPT=-DNO_TARGET\ -DKERNEL_START_ADDR=0x80000000
+	make -C ../../simulation SIMOPT=-DNO_TARGET\ -DKERNEL_START_ADDR=0x80000000\ -DKERNEL_ELF_LOCATION=\\\"/root/software/xv6-riscv/kernel/kernel\\\"
 	make -C ../../simulation/bootrom -B LOADEROPT=-DBINSIZE=$(shell ls $(K)/kernel.bin -l | awk -F\  '{print $$5}')\ -DBINSTART=256\ -DHEAD=0x80000000
 	cp ../../simulation/bootrom/bootrom.hex ./
 	cp ../../simulation/rv32x_simulation ./
