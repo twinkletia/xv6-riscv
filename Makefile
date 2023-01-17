@@ -135,12 +135,12 @@ clean:
 block_device.img: fs.img
 	cp $< $@
 run: $K/kernel block_device.img
-	make -C ../../simulation SIMOPT=-DNO_TARGET\ -DKERNEL_START_ADDR=0x80000000\ -DKERNEL_ELF_LOCATION=\\\"/root/software/xv6-riscv/kernel/kernel\\\"
-	make -C ../../simulation/bootrom -B LOADEROPT=-DBINSIZE=$(shell ls $(K)/kernel.bin -l | awk -F\  '{print $$5}')\ -DBINSTART=256\ -DHEAD=0x80000000
+	make -C ../../simulation SIMOPT=-DNO_TARGET\ -DKERNEL_START_ADDR=0x80000000\ -DKERNEL_ELF_LOCATION=\\\"/root/software/xv6-riscv/kernel/kernel\\\" -B
+	make -C ../../simulation/bootrom -B LOADEROPT=-DBINSIZE=$(shell ls $(K)/kernel.bin -l | awk -F\  '{print $$5}')\ -DBINSTART=0x20000\ -DHEAD=0x80000000
 	cp ../../simulation/bootrom/bootrom.hex ./
 	cp ../../simulation/rv32x_simulation ./
 	cp ../../simulation/gtk.sh ./
-	cp ../../simulation/rv32x.gtkw ./
+#	cp ../../simulation/rv32x.gtkw ./
 #	clear && ./rv32x_simulation kernel/kernel --no-sim-exit --no-log 2>/dev/null
 
 # CUT HERE

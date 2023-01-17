@@ -16,21 +16,22 @@ void mmcblk_init(void)
 {
 	initlock(&mmcblk_lock, "mmcblk");
 
-	while ((*MMC_STATUS) != 0x3)
+	while ((*MMC_STATUS) != OK)
 	{
 		asm volatile("nop");
 	}
-	*MMC_STATUS = (*MMC_STATUS) | 0x8;
+	*MMC_STATUS = (*MMC_STATUS) | INTR_EN;
 }
 void mmcblk_read(struct buf *b)
 {
-	uint32 sector = b->blockno * (BSIZE / 512);
+	uint32 sector = b->blockno * BSIZE;
 
 	acquire(&mmcblk_lock);
 	// printf("mmcblk_read: b->blockno:%d, sector:%d\n", b->blockno, sector);
 
-	*MMC_ADRS = sector; //ブロック[n]
-	*MMC_OP = 0x00000001;
+	*MMC_CMD = 17;
+	*MMC_ARG = sector;
+	*MMC_STATUS = *MMC_STATUS | EXEC;
 
 	__sync_synchronize();
 
@@ -44,7 +45,7 @@ void mmcblk_read(struct buf *b)
 			unsigned char x[4];
 		} data;
 
-		data.v = MMC_DATA_BASE[127 - (i >> 2)];
+		data.v = MMC_DATA_BASE[0 + (i >> 2)];
 
 		b->data[i + 0] = data.x[0];
 		b->data[i + 1] = data.x[1];
@@ -52,8 +53,9 @@ void mmcblk_read(struct buf *b)
 		b->data[i + 3] = data.x[3];
 	}
 
-	*MMC_ADRS = sector + 1;
-	*MMC_OP = 0x00000001;
+	*MMC_CMD = 17;
+	*MMC_ARG = sector + 512;
+	*MMC_STATUS = *MMC_STATUS | EXEC;
 
 	__sync_synchronize();
 
@@ -67,7 +69,7 @@ void mmcblk_read(struct buf *b)
 			unsigned char x[4];
 		} data;
 
-		data.v = MMC_DATA_BASE[127 - ((i - 512) >> 2)];
+		data.v = MMC_DATA_BASE[0 + ((i - 512) >> 2)];
 
 		b->data[i + 0] = data.x[0];
 		b->data[i + 1] = data.x[1];
@@ -86,7 +88,7 @@ void mmcblk_read(struct buf *b)
 
 void mmcblk_write(struct buf *b)
 {
-	uint32 sector = b->blockno * (BSIZE / 512);
+	uint32 sector = b->blockno * BSIZE;
 
 	acquire(&mmcblk_lock);
 	// printf("mmcblk_write: b->blockno:%d, sector:%d\n", b->blockno, sector);
@@ -104,11 +106,12 @@ void mmcblk_write(struct buf *b)
 		data.x[2] = b->data[i + 2];
 		data.x[3] = b->data[i + 3];
 
-		MMC_DATA_BASE[127 - (i >> 2)] = data.v;
+		MMC_DATA_BASE[0 + (i >> 2)] = data.v;
 	}
 
-	*MMC_ADRS = sector; //ブロック[n]
-	*MMC_OP = 0x00000002;
+	*MMC_CMD = 24;
+	*MMC_ARG = sector;
+	*MMC_STATUS = *MMC_STATUS | EXEC;
 
 	sleep(&mmcspi_chan, &mmcblk_lock);
 	// panic("mmcblk_write");
@@ -126,11 +129,12 @@ void mmcblk_write(struct buf *b)
 		data.x[2] = b->data[i + 2];
 		data.x[3] = b->data[i + 3];
 
-		MMC_DATA_BASE[127 - ((i - 512) >> 2)] = data.v;
+		MMC_DATA_BASE[0 + ((i - 512) >> 2)] = data.v;
 	}
 
-	*MMC_ADRS = sector + 1; //ブロック[n]
-	*MMC_OP = 0x00000002;
+	*MMC_CMD = 24;
+	*MMC_ARG = sector + 512;
+	*MMC_STATUS = *MMC_STATUS | EXEC;
 
 	sleep(&mmcspi_chan, &mmcblk_lock);
 	__sync_synchronize();
